@@ -1,0 +1,10 @@
+pytorch>=1.7.1
+scikit-image==0.16.1
+scikit-video
+trimesh
+pyembree
+plyfile
+scipy
+numpy
+matplotlib
+configargparse
