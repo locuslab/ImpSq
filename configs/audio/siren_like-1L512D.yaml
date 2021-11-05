@@ -1,0 +1,12 @@
+model_type: implicit
+gabor_alpha: 3.0
+forward_solver: forward_iter
+backward_solver: onestep
+lr: 0.001
+filter_type: siren_like
+n_layers: 1
+interm_channels: 512
+use_implicit: false
+norm_type: none
+input_scale: 25000.0
+experiment_id: siren_like-1L512D

@@ -1,0 +1,16 @@
+model_type: implicit
+gabor_alpha: 3.0
+forward_solver: forward_iter
+backward_solver: onestep
+train_tol: 0.001
+test_tol: 0.0001
+train_batch_size: 50000
+test_batch_size: 50000
+lr: 0.0005
+filter_type: siren_like
+n_layers: 1
+interm_channels: 512
+use_implicit: true
+norm_type: spectral_norm
+input_scale: 256.0
+experiment_id: DEQ-siren_like-1L512D

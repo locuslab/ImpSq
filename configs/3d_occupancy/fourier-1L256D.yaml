@@ -1,0 +1,16 @@
+model_type: implicit
+gabor_alpha: 3.0
+forward_solver: forward_iter
+backward_solver: onestep
+train_tol: 0.001
+test_tol: 0.0001
+train_batch_size: 50000
+test_batch_size: 50000
+lr: 0.0005
+filter_type: fourier
+n_layers: 1
+interm_channels: 256
+use_implicit: false
+norm_type: none
+input_scale: 256.0
+experiment_id: fourier-1L256D

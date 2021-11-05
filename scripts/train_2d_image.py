@@ -18,7 +18,7 @@ import configargparse
 import yaml
 
 from modules.modeling_utils import get_model, construct_model_args, get_summary_dict
-from modules.utils import get_psnr
+from modules.utils import get_psnr, network_spec
 
 def load_dataset(filename, id):
     npz_data = np.load(filename)
@@ -166,17 +166,17 @@ def render(model, render_input, device='cuda'):
 def main(args):
     if args.dataset == 'nature':
         # import div2k
-        dataset = load_dataset('./data/data_div2k.npz', '1TtwlEDArhOMoH18aUyjIMSZ3WODFmUab')
+        dataset = load_dataset('./data/image/data_div2k.npz', '1TtwlEDArhOMoH18aUyjIMSZ3WODFmUab')
         data_channels = 3
         RES = 512
     elif args.dataset == 'text':
         # import text
-        dataset = load_dataset('./data/data_2d_text.npz', '1V-RQJcMuk9GD4JCUn70o7nwQE0hEzHoT')
+        dataset = load_dataset('./data/image/data_2d_text.npz', '1V-RQJcMuk9GD4JCUn70o7nwQE0hEzHoT')
         data_channels = 3
         RES = 512
     elif args.dataset == 'celeba':
         dataset = {
-            'data_test': np.load('./data/celeba_128_tiny.npy').astype(np.float32).reshape(-1, 128, 128, 3)[:100] / 255
+            'data_test': np.load('./data/image/celeba_128_tiny.npy').astype(np.float32).reshape(-1, 128, 128, 3)[:100] / 255
         }
         data_channels = 3
         RES = 128
@@ -199,15 +199,14 @@ def main(args):
         y_train = dataset['data_test'][:, ::2, ::2]
         y_test = dataset['data_test'][:, 1::2, 1::2]
     else:
-        x_train = x_test = full_x_grid#[:, ::2, ::2]
-        y_train = y_test = dataset['data_test']#[:, ::2, ::2]
+        x_train = x_test = full_x_grid
+        y_train = y_test = dataset['data_test']
 
     x_train, x_test = x_train.to(args.device), x_test.to(args.device)
     y_train, y_test = torch.tensor(y_train, dtype=torch.float32).to(args.device), torch.tensor(y_test, dtype=torch.float32).to(args.device)
 
     summary_dict_path = '{:s}/{:s}_summary.pth'.format(args.log_dir, args.experiment_id)
-    # new_dict = get_summary_dict(2, data_channels, [(1, 256), (1, 512), (4, 256)], args.input_scale)
-    new_dict = get_summary_dict(2, data_channels, [(1, 128), (1, 256), (4, 128)], args.input_scale)
+    new_dict = get_summary_dict(2, data_channels, args.filters, args.network_specs, args.input_scale)
     if args.continue_run and os.path.exists(summary_dict_path):
         print("Restoring summary dict from {:s}".format(os.path.abspath(summary_dict_path)))
         summary_dict = torch.load(summary_dict_path)
@@ -299,15 +298,19 @@ def main(args):
     
 
 if __name__ == '__main__':
-    parser = configargparse.ArgumentParser()
+    parser = configargparse.ArgumentParser(config_file_parser_class=configargparse.YAMLConfigFileParser)
     parser.add_argument('--experiment_id', default='vanilla')
+    parser.add_argument('-c', '--config_file', default=None, is_config_file=True)
     parser.add_argument('--dataset', default='nature', choices=['camera', 'celeba', 'nature', 'text'])
+    parser.add_argument('--log_dir', default=None, type=str)
 
     parser.add_argument("--batch_size", default=-1, type=int)
     parser.add_argument('--lr', default=1e-3, type=float)
     parser.add_argument('--lr_decay', default=1., type=float)
     parser.add_argument('--device', default='cuda', type=str)
 
+    parser.add_argument('--filters', default=['fourier', 'gabor', 'siren_like'], nargs='+', type=str)
+    parser.add_argument('--network_specs', default=[[1, 256], [1, 512], [4, 256]], nargs='+', type=network_spec)
     parser.add_argument('--input_scale', default=256., type=float)
     parser.add_argument('--no_skip_solver', default=False, action='store_true')
 
@@ -317,11 +320,10 @@ if __name__ == '__main__':
 
     parser.add_argument('--continue_run', default=False, action='store_true')
 
-    parser.add_argument('--inference', default=False, action='store_true')
-
     args = parser.parse_args()
 
-    args.log_dir = f'logs/images/{args.experiment_id}'
+    if args.log_dir is None:
+        args.log_dir = f'logs/images/{args.experiment_id}/{args.dataset}'
     [os.makedirs(path, exist_ok=True) for path in (args.log_dir,)]
 
     if not args.continue_run:

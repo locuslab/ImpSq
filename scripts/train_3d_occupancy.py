@@ -402,18 +402,18 @@ def eval(args, model):
             f.write(f"\tIoU {cm.get_iou():.5f}\n")
             f.write("\n")
 
-    # mesh, corners = mesh_obj
-    # c0, c1 = [torch.tensor(t, dtype=torch.float32) for t in corners]
-    # render_args_hr[0] = [torch.tensor(t, dtype=torch.float32) for t in render_args_hr[0]]
-    # render_args_lr[0] = [torch.tensor(t, dtype=torch.float32) for t in render_args_lr[0]]
-    # render_args_hr[1] = [c0, c1]
-    # render_args_lr[1] = [c0, c1]
+    mesh, corners = mesh_obj
+    c0, c1 = [torch.tensor(t, dtype=torch.float32) for t in corners]
+    render_args_hr[0] = [torch.tensor(t, dtype=torch.float32) for t in render_args_hr[0]]
+    render_args_lr[0] = [torch.tensor(t, dtype=torch.float32) for t in render_args_lr[0]]
+    render_args_hr[1] = [c0, c1]
+    render_args_lr[1] = [c0, c1]
 
-    # with torch.no_grad():
-    #     depth_map, acc_map = render_rays_native_hier(model, *render_args_hr, device=args.device)
-    #     normal_map = make_normals(render_args_hr[0], depth_map.cpu()) * 0.5 + 0.5
+    with torch.no_grad():
+        depth_map, acc_map = render_rays_native_hier(model, *render_args_hr, device=args.device)
+        normal_map = make_normals(render_args_hr[0], depth_map.cpu()) * 0.5 + 0.5
 
-    # skimage.io.imsave(args.vis_dir + '/final_rendered.png', normal_map.squeeze().cpu().numpy())
+    skimage.io.imsave(args.vis_dir + '/final_rendered.png', normal_map.squeeze().cpu().numpy())
 
 
 def main(args):
@@ -458,11 +458,13 @@ def main(args):
         )
 
 if __name__ == '__main__':
-    parser = configargparse.ArgumentParser()
-    parser.add_argument('--experiment_id', default='debug', type=str)
+    parser = configargparse.ArgumentParser(config_file_parser_class=configargparse.YAMLConfigFileParser)
+    parser.add_argument('--experiment_id', default='vanilla', type=str)
+    parser.add_argument('-c', '--config_file', default=None, is_config_file=True)
     parser.add_argument('--dataset', default='dragon', choices=['dragon', 'bunny', 'buddha', 'armadillo', 'lucy'])
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--eval', default=False, action='store_true')
+    
 
     parser.add_argument('--restore_path', default=None, type=str)
 
@@ -480,10 +482,10 @@ if __name__ == '__main__':
     parser.add_argument('--filter_type', default='fourier', choices=['fourier', 'gabor', 'siren_like'])
     parser.add_argument('--norm_type', default='none', choices=['none', 'spectral_norm', 'weight_norm'])
     parser.add_argument('--gabor_alpha', default=3., type=float)
-    parser.add_argument('--forward_solver', default='forward_iter', type=str)
-    parser.add_argument('--backward_solver', default='forward_iter', type=str)
-    parser.add_argument('--train_tol', default=0.001, type=float)
-    parser.add_argument('--test_tol', default=0.0001, type=float)
+    parser.add_argument('--forward_solver', default='forward_iter', choices=['forward_iter', 'broyden'])
+    parser.add_argument('--backward_solver', default='forward_iter', choices=['onestep', 'forward_iter', 'broyden'])
+    parser.add_argument('--train_tol', default=1e-3, type=float)
+    parser.add_argument('--test_tol', default=1e-4, type=float)
 
     parser.add_argument('--train_batch_size', default=50000, type=int)
     parser.add_argument('--test_batch_size', default=50000, type=int)
@@ -491,7 +493,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    args.log_dir = f'logs/3d_occupancy/{args.dataset}/{args.experiment_id}'
+    args.log_dir = f'logs/3d_occupancy/{args.experiment_id}{args.dataset}'
     args.vis_dir = f'{args.log_dir}/visualizations'
     args.save_dir = f'{args.log_dir}/saved_models'
 

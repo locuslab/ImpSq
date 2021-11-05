@@ -14,7 +14,7 @@ import torch
 import torch.nn as nn
 
 from modules.modeling_utils import get_model, construct_model_args
-from modules.utils import get_psnr, batch_indices_generator, batched_apply
+from modules.utils import get_psnr_stats, batch_indices_generator, batched_apply
 
 def preprocess(img_tensor):
     return img_tensor * 2 - 1
@@ -192,7 +192,7 @@ def test(args, test_data, model):
 
 def main(args):
     if args.dataset == 'cat':
-        video_path = './data/cat_video.mp4'
+        video_path = './data/video/cat_video.mp4'
     elif args.dataset == 'bikes':
         video_path = skvideo.datasets.bikes()
     
@@ -214,6 +214,7 @@ def main(args):
         input_scale=args.input_scale,
         use_implicit=args.use_implicit, 
         filter_type=args.filter_type,
+        filter_options={'alpha': args.gabor_alpha},
         norm_type=args.norm_type,
         forward_solver=args.forward_solver,
         backward_solver=args.backward_solver,
@@ -242,8 +243,9 @@ def main(args):
         )
 
 if __name__ == '__main__':
-    parser = configargparse.ArgumentParser()
-    parser.add_argument('--experiment_id', default='video', type=str)
+    parser = configargparse.ArgumentParser(config_file_parser_class=configargparse.YAMLConfigFileParser)
+    parser.add_argument('--experiment_id', default='vanilla', type=str)
+    parser.add_argument('-c', '--config_file', default=None, is_config_file=True)
     parser.add_argument('--dataset', default='cat', choices=['bikes', 'cat'])
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--inference', default=False, action='store_true')
@@ -263,6 +265,7 @@ if __name__ == '__main__':
     parser.add_argument('--input_scale', default=256., type=float)
     parser.add_argument('--filter_type', default='fourier', choices=['fourier', 'gabor', 'siren_like'])
     parser.add_argument('--norm_type', default='none', choices=['none', 'spectral_norm', 'weight_norm'])
+    parser.add_argument('--gabor_alpha', default=3.)
     parser.add_argument('--forward_solver', default='forward_iter', type=str)
     parser.add_argument('--backward_solver', default='forward_iter', type=str)
 
@@ -274,7 +277,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    args.log_dir = f'logs/videos/{args.experiment_id}'
+    args.log_dir = f'logs/videos/{args.experiment_id}/{args.dataset}'
     args.vis_dir = f'{args.log_dir}/visualizations'
     args.save_dir = f'{args.log_dir}/saved_models'
 

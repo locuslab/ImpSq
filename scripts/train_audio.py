@@ -54,7 +54,6 @@ def train(args, train_data, model, opt, iters=10000, device='cuda', liveplot=Fal
     model = model.to(device)
 
     splits = np.linspace(0, len(train_in), args.grad_accum_steps + 1).astype(np.int)
-    # z_init = torch.zeros(len(train_in), model.interm_channels).to(device)
     z_inits = [torch.zeros(splits[i + 1] - splits[i], model.interm_channels).to(device) for i in range(len(splits) - 1)]
     # Main training Loop
     postfix = {'loss': np.inf, 'psnr': 0., 'forward_steps': 0}
@@ -63,15 +62,6 @@ def train(args, train_data, model, opt, iters=10000, device='cuda', liveplot=Fal
         start_time = time.time()
         
         opt.zero_grad()
-
-        # model_outputs = model(train_in, z_init, skip_solver=i > 1, verbose=False)
-        # if args.use_implicit and 'imp_layer_output' in model_outputs:
-        #     z_init = model_outputs['imp_layer_output'].detach()
-
-        # loss = criterion(model_outputs['output'].squeeze(-1), train_tgt)
-        # loss_list.append(loss.item())
-
-        # loss.backward()
         
         for j in range(len(splits) - 1):
             model_outputs = model(train_in[splits[j]: splits[j + 1]], z_inits[j], skip_solver=i > 1, verbose=False)
@@ -170,8 +160,8 @@ def test(args, test_data, model):
 
 def main(args):
     datasets = {
-        'counting': './data/gt_counting.wav',
-        'bach': './data/gt_bach.wav'
+        'counting': './data/audio/gt_counting.wav',
+        'bach': './data/audio/gt_bach.wav'
     }
 
     audio_path = datasets[args.dataset]
@@ -227,8 +217,9 @@ def main(args):
         )
 
 if __name__ == '__main__':
-    parser = configargparse.ArgumentParser()
-    parser.add_argument('--experiment_id', default='audio', type=str)
+    parser = configargparse.ArgumentParser(config_file_parser_class=configargparse.YAMLConfigFileParser)
+    parser.add_argument('--experiment_id', default='vanilla', type=str)
+    parser.add_argument('-c', '--config_file', default=None, is_config_file=True)
     parser.add_argument('--dataset', default='bach', choices=['counting', 'bach'])
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--inference', default=False, action='store_true')
@@ -241,28 +232,26 @@ if __name__ == '__main__':
     parser.add_argument('--log_freq', default=500, type=int)
     parser.add_argument('--save_freq', default=500, type=int)
 
-    parser.add_argument('--grad_accum_steps', default=1, type=int)
+    parser.add_argument('--grad_accum_steps', default=1, type=int, 
+                        help="Number of steps used for gradient accumulation. "
+                             "Set to >1 when data cannot into the device memory")
 
     parser.add_argument('--model_type', default='implicit', choices=['implicit', 'siren', 'ffn'])
     parser.add_argument('--n_layers', default=4, type=int)
     parser.add_argument('--interm_channels', default=128, type=int)
     parser.add_argument('--use_implicit', default=False, action='store_true')
-    parser.add_argument('--input_scale', default=10000., type=float)
+    parser.add_argument('--input_scale', default=25000., type=float)
     parser.add_argument('--filter_type', default='fourier', choices=['fourier', 'gabor', 'siren_like'])
     parser.add_argument('--gabor_alpha', default=3., type=float)
     parser.add_argument('--norm_type', default='none', choices=['none', 'spectral_norm', 'weight_norm'])
     parser.add_argument('--forward_solver', default='forward_iter', type=str)
     parser.add_argument('--backward_solver', default='onestep', type=str)
 
-    parser.add_argument('--accelerated_training_iter', default=1, type=int)
-
-    parser.add_argument('--train_batch_size', default=256 * 256, type=int)
-    parser.add_argument('--test_batch_size', default=256 * 256, type=int)
     parser.add_argument('--lr', default=1e-3, type=float)
 
     args = parser.parse_args()
 
-    args.log_dir = f'logs/audios/{args.dataset}/{args.experiment_id}'
+    args.log_dir = f'logs/audios/{args.experiment_id}/{args.dataset}'
     args.vis_dir = f'{args.log_dir}/visualizations'
     args.save_dir = f'{args.log_dir}/saved_models'
 

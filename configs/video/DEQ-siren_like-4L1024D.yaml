@@ -1,0 +1,12 @@
+model_type: implicit
+gabor_alpha: 3.0
+forward_solver: forward_iter
+backward_solver: onestep
+lr: 0.001
+filter_type: siren_like
+n_layers: 4
+interm_channels: 1024
+use_implicit: true
+norm_type: none
+input_scale: 256
+experiment_id: DEQ-siren_like-4L1024D

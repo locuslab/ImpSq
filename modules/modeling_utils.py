@@ -42,7 +42,7 @@ def construct_model_args(model_type,
                          filter_type='fourier', 
                          filter_options={},
                          norm_type='none',
-                         tol=1e-2,
+                         tol=1e-3,
                          forward_solver='forward_iter', 
                          backward_solver='forward_iter'):
     _dict = {
@@ -63,15 +63,11 @@ def construct_model_args(model_type,
     }
     return _dict
 
-def get_summary_dict(in_channels, out_channels=None, sizes=[(1, 256), (1, 512), (4, 256)], input_scale=256.):
+def get_summary_dict(in_channels, out_channels=None, filter_options=['gabor', 'fourier', 'siren_like'], size_options=[(1, 256), (1, 512), (4, 256)], input_scale=256.):
     if out_channels is None:
         out_channels = in_channels
 
     deq_options = [True, False]
-    filter_options = ['gabor', 'fourier', 'siren_like']
-    
-    size_options = sizes
-
     _dict = {}
 
     for size in size_options:
@@ -91,7 +87,8 @@ def get_summary_dict(in_channels, out_channels=None, sizes=[(1, 256), (1, 512), 
                                                 in_channels, 
                                                 interm_channels, 
                                                 out_channels, 
-                                                input_scale=input_scale / 2 if filter_t == 'siren_like' else input_scale,
+                                                # input_scale=input_scale / 2 if filter_t == 'siren_like' else input_scale,
+                                                input_scale=input_scale,
                                                 use_implicit=deq, 
                                                 filter_type=filter_t, 
                                                 filter_options={'alpha': 3.0},

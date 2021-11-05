@@ -7,6 +7,13 @@ from tqdm import tqdm
 
 import plyfile
 import skimage.measure
+import re
+import configargparse
+
+def network_spec(s):
+    if type(s) != str:
+        return s
+    return list(map(int, s.strip('[] ').split(',')))
 
 def get_psnr(output, target):
         mse = np.mean((output - target) ** 2)
