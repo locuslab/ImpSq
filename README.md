@@ -1,4 +1,4 @@
-# Official Repository for (Implicit)<sup>2</sup> Networks: Implicit Layers for Implicit Representations
+# (Implicit)<sup>2</sup>: Implicit Layers for Implicit Representations
 
 This repo contains the implementation of the (Implicit)<sup>2</sup> network, an implicit neural representation (INR) learning framework backboned by [Deep Equilibrium Model](https://arxiv.org/abs/1909.01377) (DEQ). By taking advantage of the full-batch training scheme commonly applied to INR learning on low-dimensional data (e.g. images and audios) as well as an approximated gradient, (Implicit)<sup>2</sup> networks operate on significantly less computation and memory budget than exisiting explicit models while perform competitively.
 
